@@ -19,7 +19,6 @@ namespace Stashbox.Extension.Wcf
         public StashboxOperationContext(IScopeExtension scopeExtension)
         {
             Shield.EnsureNotNull(scopeExtension, nameof(scopeExtension));
-
             Shield.EnsureNotNull(scopeExtension.Scope, $"{nameof(scopeExtension)}.{scopeExtension.Scope}");
 
             _scopeExtension = scopeExtension;

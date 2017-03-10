@@ -51,17 +51,17 @@ namespace Stashbox.Extension.Wcf
 
         protected abstract ServiceHost CreateSingletonServiceHost(ServiceMetadata serviceMetadata, Uri[] baseAddresses);
 
-        public static void RegisterOnHostCreatedAction(Type serviceType, Action<ServiceHostBase> hostCreatedAction)
+        public static void RegisterOnHostCreatedAction(Type serviceType, Action<ServiceHostBase> onHostCreatedAction)
         {
             Shield.EnsureTrue(!OnHostCreatedActions.ContainsKey(serviceType), $"Cannot register multiple actions for a specific service. Service Type: {serviceType.FullName}");
+            Shield.EnsureNotNull(onHostCreatedAction, nameof(onHostCreatedAction));
 
-            OnHostCreatedActions.Add(serviceType, hostCreatedAction);
+            OnHostCreatedActions.Add(serviceType, onHostCreatedAction);
         }
 
         public static void SetContainer(IStashboxContainer container)
         {
             Shield.EnsureTrue(Container == null, $"{nameof(Container)} is already initialized.");
-
             Shield.EnsureNotNull(container, nameof(container));
 
             Container = container;

@@ -5,7 +5,7 @@ using System.ServiceModel.Dispatcher;
 
 namespace Stashbox.Extension.Wcf
 {
-    internal class StashboxDependencyInjectionOperationBehavior : IOperationBehavior, IDisposable
+    public class StashboxDependencyInjectionOperationBehavior : IOperationBehavior, IDisposable
     {
         private Func<StashboxDependencyInjectionParameterInspector> _parameterInspectorFactory;
 

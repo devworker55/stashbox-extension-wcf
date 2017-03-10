@@ -22,8 +22,13 @@ namespace Stashbox.Extension.Wcf
         /// <summary>
         ///
         /// </summary>
+        public static Assembly[] ServiceAssemblies { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         /// <param name="configureAction"></param>
-        public static void RegisterStashbox(Action<IStashboxContainer> configureAction)
+        public static IStashboxContainer RegisterStashbox(Action<IStashboxContainer> configureAction)
         {
             var container = new StashboxContainer(config => config.WithCircularDependencyTracking()
                                                                   .WithDisposableTransientTracking()
@@ -32,6 +37,8 @@ namespace Stashbox.Extension.Wcf
 
             ConfigureStashboxServiceComponents(container);
             configureAction.Invoke(container);
+
+            return container;
         }
 
         /// <summary>
@@ -46,6 +53,8 @@ namespace Stashbox.Extension.Wcf
         private static void ConfigureStashboxServiceComponents(IStashboxContainer container)
         {
             container.RegisterType<StashboxInstanceProvider>();
+
+            container.PrepareType<IStashboxContainer>().WithFactory(_ => _.BeginScope()).Register();
 
             container.PrepareType<IScopeProvider, StashboxPerServiceInstanceScopeProvider>()
                      .WhenDependantIs<StashboxInstanceProvider>()
@@ -69,7 +78,7 @@ namespace Stashbox.Extension.Wcf
 
             if (servicesAssemblies == null || servicesAssemblies.Length == 0)
             {
-                servicesAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+                servicesAssemblies = ServiceAssemblies;
             }
 
             var serviceTypes = (from assembly in servicesAssemblies

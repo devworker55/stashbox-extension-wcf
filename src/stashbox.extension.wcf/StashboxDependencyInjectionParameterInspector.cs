@@ -13,36 +13,25 @@ namespace Stashbox.Extension.Wcf
             _scopeProvider = scopeProvider;
         }
 
-        public virtual void AfterCall(string operationName, object[] outputs, object returnValue, object correlationState)
-        {
-            if (StashboxConfig.EnablePerSericeOperationLifetime)
-            {
-                var operationContext = OperationContext.Current;
-                operationContext?.Extensions.Find<StashboxOperationContext>()?.Dispose();
-            }
-        }
+        public virtual void AfterCall(string operationName, object[] outputs, object returnValue, object correlationState) { }
 
         public virtual object BeforeCall(string operationName, object[] inputs)
         {
-            if (StashboxConfig.EnablePerSericeOperationLifetime)
+            var operationContext = OperationContext.Current;
+            try
             {
-                var operationContext = OperationContext.Current;
-                try
-                {
-                    var sbOperationContext = new StashboxOperationContext(_scopeProvider.GetOrCreateScope());
+                var sbOperationContext = new StashboxOperationContext(_scopeProvider.GetOrCreateScope());
 
-                    operationContext.Extensions.Add(sbOperationContext);
-                    operationContext.OperationCompleted += (sender, e) =>
-                    {
-                        operationContext.Extensions.Find<StashboxOperationContext>()?.Dispose();
-                    };
-                }
-                catch (Exception)
+                operationContext.Extensions.Add(sbOperationContext);
+                operationContext.OperationCompleted += (sender, e) =>
                 {
                     operationContext.Extensions.Find<StashboxOperationContext>()?.Dispose();
-                }
+                };
             }
-
+            catch (Exception)
+            {
+                operationContext.Extensions.Find<StashboxOperationContext>()?.Dispose();
+            }
             return "correlationState";
         }
 
@@ -55,6 +44,7 @@ namespace Stashbox.Extension.Wcf
             {
                 if (disposing)
                 {
+                    _scopeProvider.Dispose();
                     _scopeProvider = null;
                 }
 

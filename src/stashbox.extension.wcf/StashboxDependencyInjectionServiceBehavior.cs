@@ -7,7 +7,7 @@ using System.ServiceModel.Dispatcher;
 
 namespace Stashbox.Extension.Wcf
 {
-    internal class StashboxDependencyInjectionServiceBehavior : IServiceBehavior, IDisposable
+    public class StashboxDependencyInjectionServiceBehavior : IServiceBehavior, IDisposable
     {
         private Func<StashboxInstanceProvider> _instanceProviderFactory;
 

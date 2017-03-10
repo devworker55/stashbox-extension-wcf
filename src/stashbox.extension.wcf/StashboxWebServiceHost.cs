@@ -21,7 +21,6 @@ namespace Stashbox.Extension.Wcf
         protected override void OnClosing()
         {
             CleanUpPerServinceInstanceLifetimeComponents();
-
             CleanUpPerServiceOperationLifetimeComponents();
 
             base.OnClosing();
@@ -43,11 +42,7 @@ namespace Stashbox.Extension.Wcf
 
         private void CleanUpPerServiceOperationLifetimeComponents()
         {
-            if (!StashboxConfig.EnablePerSericeOperationLifetime)
-                return;
-
             RemoveDependencyInjectionOperationBehavior();
-
             RemoveDependencyInjectionParameterInspectors();
         }
 
