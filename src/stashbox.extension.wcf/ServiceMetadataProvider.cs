@@ -67,11 +67,11 @@ namespace Stashbox.Extension.Wcf
             ServiceRegistrationLifetime? registrationLifetime = null;
             var lifetime = serviceRegistrationInfo.LifetimeManager;
 
-            if (lifetime is TransientLifetime || lifetime.IsTransient)
+            if (lifetime == null)
                 registrationLifetime = ServiceRegistrationLifetime.Transient;
             if (lifetime is SingletonLifetime)
                 registrationLifetime = ServiceRegistrationLifetime.Singleton;
-            if (lifetime.IsScoped)
+            if (lifetime is ScopedLifetime)
                 registrationLifetime = ServiceRegistrationLifetime.Scoped;
 
             Shield.EnsureTrue(registrationLifetime.HasValue, $"An unsupported lifetime of type \"{lifetime.GetType().FullName}\" has been detected for service type \"{serviceType.FullName}\".");
@@ -126,7 +126,6 @@ namespace Stashbox.Extension.Wcf
                 switch (StashboxConfig.DefaultServiceLifetime)
                 {
                     case ServiceRegistrationLifetime.Transient:
-                        lifetime = new TransientLifetime();
                         break;
                     case ServiceRegistrationLifetime.Singleton:
                         lifetime = new SingletonLifetime();
@@ -136,10 +135,7 @@ namespace Stashbox.Extension.Wcf
                         break;
                 }
             }
-            else
-            {
-                lifetime = new TransientLifetime();
-            }
+
             return lifetime;
         }
     }

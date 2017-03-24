@@ -32,7 +32,6 @@ namespace Stashbox.Extension.Wcf
         {
             var container = new StashboxContainer(config => config.WithCircularDependencyTracking()
                                                                   .WithDisposableTransientTracking()
-                                                                  .WithParentContainerResolution()
                                                                   .WithUnknownTypeResolution());
 
             ConfigureStashboxServiceComponents(container);
