@@ -61,8 +61,9 @@ namespace Stashbox.Extension.Wcf
             if (operationCtx.Items[scopeId] != null)
                 return operationCtx.Items[scopeId] as TValue;
 
-            TValue instance = null;
-            if (operationCtx.Scope is IResolutionScope resolutionScope)
+            TValue instance;
+            var resolutionScope = operationCtx.Scope as IResolutionScope;
+            if (resolutionScope != null)
             {
                 instance = factory(resolutionScope) as TValue;
                 operationCtx.Items[scopeId] = instance;
