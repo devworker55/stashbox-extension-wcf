@@ -4,6 +4,7 @@ using Stashbox.Lifetime;
 using Stashbox.Utils;
 using System;
 using System.Linq.Expressions;
+using Stashbox.Infrastructure.Registration;
 
 namespace Stashbox.Extension.Wcf
 {
@@ -28,13 +29,13 @@ namespace Stashbox.Extension.Wcf
             this._scopeId = scopedId;
         }
 
-        public override Expression GetExpression(IContainerContext containerContext, IObjectBuilder objectBuilder, ResolutionInfo resolutionInfo, Type resolveType)
+        public override Expression GetExpression(IServiceRegistration serviceRegistration, IObjectBuilder objectBuilder, ResolutionInfo resolutionInfo, Type resolveType)
         {
             if (this._expression != null) return this._expression;
             lock (this._lock)
             {
                 if (this._expression != null) return this._expression;
-                var expr = base.GetExpression(containerContext, objectBuilder, resolutionInfo, resolveType);
+                var expr = base.GetExpression(serviceRegistration, objectBuilder, resolutionInfo, resolveType);
                 if (expr == null)
                     return null;
 

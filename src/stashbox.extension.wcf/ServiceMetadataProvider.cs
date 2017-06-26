@@ -65,7 +65,7 @@ namespace Stashbox.Extension.Wcf
             Shield.EnsureNotNull(serviceRegistrationInfo, nameof(serviceRegistrationInfo));
 
             ServiceRegistrationLifetime? registrationLifetime = null;
-            var lifetime = serviceRegistrationInfo.LifetimeManager;
+            var lifetime = serviceRegistrationInfo.RegistrationContext.Lifetime;
 
             if (lifetime == null)
                 registrationLifetime = ServiceRegistrationLifetime.Transient;
@@ -94,7 +94,7 @@ namespace Stashbox.Extension.Wcf
 
                 if (IsConcreteService(serviceType))
                 {
-                    container.PrepareType(serviceType).WithLifetime(GetLifetimeScope(serviceType)).Register();
+                    container.RegisterType(serviceType, context => context.WithLifetime(GetLifetimeScope(serviceType)));
                 }
                 else if (IsServiceContract(serviceType))
                 {
@@ -102,7 +102,7 @@ namespace Stashbox.Extension.Wcf
                     Shield.EnsureNotNull(concreteServiceTypes, $"A concrete service type that implements \"{serviceType.FullName}\" could not be found in the list of known service assemblies defined by \"{nameof(StashboxConfig)}.{nameof(StashboxConfig.ServiceAssemblies)}\".");
                     foreach (var concreteServiceType in concreteServiceTypes)
                     {
-                        container.PrepareType(concreteServiceType).WithLifetime(GetLifetimeScope(concreteServiceType)).Register();
+                        container.RegisterType(concreteServiceType, context => context.WithLifetime(GetLifetimeScope(concreteServiceType)));
                     }
                 }
                 else
