@@ -32,7 +32,6 @@ namespace Stashbox.Extension.Wcf
         {
             var container = new StashboxContainer(config => config.WithCircularDependencyTracking()
                                                                   .WithDisposableTransientTracking()
-                                                                  .WithParentContainerResolution()
                                                                   .WithUnknownTypeResolution());
 
             ConfigureStashboxServiceComponents(container);
@@ -54,15 +53,13 @@ namespace Stashbox.Extension.Wcf
         {
             container.RegisterType<StashboxInstanceProvider>();
 
-            container.PrepareType<IStashboxContainer>().WithFactory(_ => _.BeginScope()).Register();
+            container.RegisterType<IStashboxContainer>(context => context.WithFactory(_ => _.BeginScope()));
 
-            container.PrepareType<IScopeProvider, StashboxPerServiceInstanceScopeProvider>()
-                     .WhenDependantIs<StashboxInstanceProvider>()
-                     .Register();
+            container.RegisterType<IScopeProvider, StashboxPerServiceInstanceScopeProvider>(context => context
+                     .WhenDependantIs<StashboxInstanceProvider>());
 
-            container.PrepareType<IScopeProvider, StashboxPerServiceOperationScopeProvider>()
-                     .WhenDependantIs<StashboxDependencyInjectionParameterInspector>()
-                     .Register();
+            container.RegisterType<IScopeProvider, StashboxPerServiceOperationScopeProvider>(context => context
+                     .WhenDependantIs<StashboxDependencyInjectionParameterInspector>());
 
             StashboxServiceHostFactoryBase.SetContainer(container);
         }
@@ -95,9 +92,8 @@ namespace Stashbox.Extension.Wcf
             foreach (Type serviceType in serviceTypes)
             {
                 ILifetime lifetimeScope = ServiceMetadataProvider.GetLifetimeScope(serviceType);
-                container.PrepareType(serviceType)
-                         .WithLifetime(lifetimeScope)
-                         .Register();
+                container.RegisterType(serviceType, context => context
+                         .WithLifetime(lifetimeScope));
             }
         }
 

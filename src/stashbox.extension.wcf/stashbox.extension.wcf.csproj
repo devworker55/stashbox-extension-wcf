@@ -30,8 +30,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Stashbox, Version=2.2.0.0, Culture=neutral, PublicKeyToken=9778e33426732b68, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Stashbox.2.2.0\lib\net45\Stashbox.dll</HintPath>
+    <Reference Include="Stashbox, Version=2.5.2.0, Culture=neutral, PublicKeyToken=9778e33426732b68, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Stashbox.2.5.2\lib\net45\Stashbox.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants.cs" />
     <Compile Include="IScopeExtension.cs" />
     <Compile Include="IScopeProvider.cs" />
     <Compile Include="PerServiceOperationLifetime.cs" />
