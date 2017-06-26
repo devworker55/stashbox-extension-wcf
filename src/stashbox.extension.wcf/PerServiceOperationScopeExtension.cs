@@ -5,9 +5,9 @@ namespace Stashbox.Extension.Wcf
 {
     public class PerServiceOperationScopeExtension : IExtension<OperationContext>, IScopeExtension
     {
-        public IStashboxContainer Scope { get; }
+        public IDependencyResolver Scope { get; }
 
-        public PerServiceOperationScopeExtension(IStashboxContainer scope)
+        public PerServiceOperationScopeExtension(IDependencyResolver scope)
         {
             Scope = scope;
         }

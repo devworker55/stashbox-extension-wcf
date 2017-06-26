@@ -41,6 +41,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Stashbox, Version=2.5.2.0, Culture=neutral, PublicKeyToken=9778e33426732b68, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Stashbox.2.5.2\lib\net45\Stashbox.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ServiceModel.Activation" />
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
     <Reference Include="System.Web.ApplicationServices" />
@@ -60,26 +64,42 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Service1.svc" />
+    <Content Include="DefaultSampleService.svc" />
+    <Content Include="SingletonService.svc" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Service1.svc.cs">
-      <DependentUpon>Service1.svc</DependentUpon>
+    <Content Include="App_Code\Startup.cs" />
+    <Compile Include="Bootstrapper.cs" />
+    <Compile Include="DefaultSampleService.svc.cs">
+      <DependentUpon>DefaultSampleService.svc</DependentUpon>
     </Compile>
-    <Compile Include="IService1.cs" />
+    <Compile Include="IDefaultSampleService.cs" />
+    <Compile Include="SingletonService.svc.cs">
+      <DependentUpon>SingletonService.svc</DependentUpon>
+    </Compile>
+    <Compile Include="ISingletonService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Folder Include="App_Data\" />
-  </ItemGroup>
-  <ItemGroup>
+    <Content Include="packages.config" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
     <None Include="Web.Release.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\stashbox.extension.wcf\stashbox.extension.wcf.csproj">
+      <Project>{1c61adee-8f27-45b4-acd4-bb8eb0493c25}</Project>
+      <Name>stashbox.extension.wcf</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\stashbox.extension.wcf.sample.domain\stashbox.extension.wcf.sample.domain.csproj">
+      <Project>{869ba7ab-7efc-4145-b826-051a82d172b3}</Project>
+      <Name>stashbox.extension.wcf.sample.domain</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
@@ -96,7 +116,7 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>23302</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:23302/</IISUrl>
+          <IISUrl>http://localhost:3000/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>

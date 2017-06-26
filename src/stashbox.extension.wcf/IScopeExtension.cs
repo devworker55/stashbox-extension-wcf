@@ -4,7 +4,7 @@ namespace Stashbox.Extension.Wcf
 {
     public interface IScopeExtension
     {
-        IStashboxContainer Scope { get; }
+        IDependencyResolver Scope { get; }
 
         void TerminateScope();
     }

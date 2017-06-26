@@ -19,7 +19,6 @@ namespace Stashbox.Extension.Wcf
             var aspNetCompatibilityRequirementsAttribute = GetAspNetCompatibilityRequirementsAttribute(serviceType);
             var serviceActivator = serviceLifetime == ServiceRegistrationLifetime.Singleton ? (Func<object>)(() => StashboxServiceHostFactoryBase.Container.Resolve(serviceType))
                                                                                             : (Func<object>)(() => default(object));
-
             return new ServiceMetadata(serviceType,
                                        serviceActivator,
                                        serviceLifetime,
@@ -28,16 +27,19 @@ namespace Stashbox.Extension.Wcf
                                        aspNetCompatibilityRequirementsAttribute);
         }
 
-        public static bool IsWcfServiceType(Type type)
-        {
-            var typeIsDecorated = type.GetCustomAttributes(typeof(ServiceContractAttribute), true).Any();
-            var typesInterfacesAreDecorated = (from @interface in type.GetInterfaces()
-                                               where @interface.IsPublic
-                                               where @interface.GetCustomAttributes(typeof(ServiceContractAttribute), true).Any()
-                                               select @interface).Any();
+        public static bool IsWcfServiceType(Type type) => IsServiceContract(type) || IsConcreteService(type);
 
-            return typeIsDecorated || typesInterfacesAreDecorated;
-        }
+        private static bool IsServiceContract(Type type) => type.GetCustomAttributes(typeof(ServiceContractAttribute), true).Any();
+
+        private static bool IsConcreteService(Type type) => (from @interface in type.GetInterfaces()
+                                                             where @interface.IsPublic
+                                                             where @interface.GetCustomAttributes(typeof(ServiceContractAttribute), true).Any()
+                                                             select @interface).Any();
+
+        private static Type[] GetConcreteServiceTypes(Type serivceContractType) => StashboxConfig.ServiceAssemblies?
+                                                                                                 .SelectMany(s => s.GetTypes())
+                                                                                                 .Where(serivceContractType.IsAssignableFrom)
+                                                                                                 .ToArray();
 
         internal static IServiceRegistration GetRegistration(Type serviceType) =>
             StashboxServiceHostFactoryBase.Container.ContainerContext
@@ -63,13 +65,13 @@ namespace Stashbox.Extension.Wcf
             Shield.EnsureNotNull(serviceRegistrationInfo, nameof(serviceRegistrationInfo));
 
             ServiceRegistrationLifetime? registrationLifetime = null;
-            var lifetime = serviceRegistrationInfo.LifetimeManager;
+            var lifetime = serviceRegistrationInfo.RegistrationContext.Lifetime;
 
-            if (lifetime is TransientLifetime || lifetime.IsTransient)
+            if (lifetime == null)
                 registrationLifetime = ServiceRegistrationLifetime.Transient;
             if (lifetime is SingletonLifetime)
                 registrationLifetime = ServiceRegistrationLifetime.Singleton;
-            if (lifetime.IsScoped)
+            if (lifetime is ScopedLifetime)
                 registrationLifetime = ServiceRegistrationLifetime.Scoped;
 
             Shield.EnsureTrue(registrationLifetime.HasValue, $"An unsupported lifetime of type \"{lifetime.GetType().FullName}\" has been detected for service type \"{serviceType.FullName}\".");
@@ -86,15 +88,31 @@ namespace Stashbox.Extension.Wcf
                                                         .ContainerConfiguration
                                                         .UnknownTypeResolutionEnabled;
 
-
             if (serviceRegistrationInfo == null)
             {
                 Shield.EnsureTrue(unknownTypeResolutionEnabled, $"The given service type \"{serviceType.FullName}\" has not been registered with the container and the container configuration setting \"UnknownTypeResolutionEnabled\" is not set to true.");
 
-                container.PrepareType(serviceType).WithLifetime(GetLifetimeScope(serviceType)).Register();
+                if (IsConcreteService(serviceType))
+                {
+                    container.RegisterType(serviceType, context => context.WithLifetime(GetLifetimeScope(serviceType)));
+                }
+                else if (IsServiceContract(serviceType))
+                {
+                    var concreteServiceTypes = GetConcreteServiceTypes(serviceType);
+                    Shield.EnsureNotNull(concreteServiceTypes, $"A concrete service type that implements \"{serviceType.FullName}\" could not be found in the list of known service assemblies defined by \"{nameof(StashboxConfig)}.{nameof(StashboxConfig.ServiceAssemblies)}\".");
+                    foreach (var concreteServiceType in concreteServiceTypes)
+                    {
+                        container.RegisterType(concreteServiceType, context => context.WithLifetime(GetLifetimeScope(concreteServiceType)));
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException($"The given service type \"{serviceType.FullName}\" is an invalid service type, it should have either the \"ServiceContractAttribute\" declared " +
+                                                         "on the type or implements an interface that has the \"ServiceContractAttribute\" declared on that interface type.");
+                }
             }
 
-            return serviceRegistrationInfo;
+            return serviceRegistrationInfo ?? GetRegistration(serviceType);
         }
 
         internal static ILifetime GetLifetimeScope(Type serviceType)
@@ -108,7 +126,6 @@ namespace Stashbox.Extension.Wcf
                 switch (StashboxConfig.DefaultServiceLifetime)
                 {
                     case ServiceRegistrationLifetime.Transient:
-                        lifetime = new TransientLifetime();
                         break;
                     case ServiceRegistrationLifetime.Singleton:
                         lifetime = new SingletonLifetime();
@@ -118,10 +135,7 @@ namespace Stashbox.Extension.Wcf
                         break;
                 }
             }
-            else
-            {
-                lifetime = new TransientLifetime();
-            }
+
             return lifetime;
         }
     }

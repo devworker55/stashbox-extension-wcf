@@ -1,0 +1,5 @@
+﻿<%@ ServiceHost Language="C#"
+                Debug="true"
+                Service="stashbox.extension.wcf.sample.DefaultSampleService"
+                Factory="Stashbox.Extension.Wcf.StashboxServiceHostFactory, Stashbox.Extension.Wcf"
+                CodeBehind="DefaultSampleService.svc.cs" %>

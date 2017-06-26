@@ -4,18 +4,17 @@ using Stashbox.Lifetime;
 using Stashbox.Utils;
 using System;
 using System.Linq.Expressions;
+using Stashbox.Infrastructure.Registration;
 
 namespace Stashbox.Extension.Wcf
 {
     public sealed class PerServiceOperationLifetime : LifetimeBase
     {
+        private volatile Expression _expression;
+
         private readonly object _lock = new object();
 
         private readonly int _scopeId = Guid.NewGuid().GetHashCode();
-
-        private StashboxOperationContext OperationContext => StashboxOperationContext.Current;
-
-        public override bool IsScoped => true;
 
         /// <summary>
         /// Constructs a <see cref="PerServiceOperationLifetime"/>.
@@ -30,63 +29,52 @@ namespace Stashbox.Extension.Wcf
             this._scopeId = scopedId;
         }
 
-        public override Expression GetExpression(IContainerContext containerContext, IObjectBuilder objectBuilder, ResolutionInfo resolutionInfo, TypeInformation resolveType)
+        public override Expression GetExpression(IServiceRegistration serviceRegistration, IObjectBuilder objectBuilder, ResolutionInfo resolutionInfo, Type resolveType)
         {
-            var call = Expression.Call(Expression.Constant(this), nameof(GetScopedInstance), null,
-                                       Expression.Constant(containerContext),
-                                       Expression.Constant(objectBuilder),
-                                       Expression.Constant(resolutionInfo),
-                                       Expression.Constant(resolveType));
-            return Expression.Convert(call, resolveType.Type);
-        }
-
-        private object GetScopedInstance(IContainerContext containerContext, IObjectBuilder objectBuilder, ResolutionInfo resolutionInfo, TypeInformation resolveType)
-        {
+            if (this._expression != null) return this._expression;
             lock (this._lock)
             {
-                var operationCtx = OperationContext;
-                if (operationCtx == null)
+                if (this._expression != null) return this._expression;
+                var expr = base.GetExpression(serviceRegistration, objectBuilder, resolutionInfo, resolveType);
+                if (expr == null)
                     return null;
 
-                if (operationCtx.Items[this._scopeId] != null)
-                    return operationCtx.Items[this._scopeId];
+                var factory = expr.CompileDelegate(Stashbox.Constants.ScopeExpression);
 
-                var scope = OperationContext.Scope;
-                object instance = null;
-                if (containerContext.Container == scope)
-                {
-                    var expr = base.GetExpression(containerContext, objectBuilder, resolutionInfo, resolveType);
-                    instance = Expression.Lambda<Func<object>>(expr).Compile().Invoke();
-                }
-                else if (scope != null)
-                    instance = scope.ActivationContext.Activate(resolutionInfo, resolveType);
+                var method = Constants.GetPerServiceOperationScopedValueMethod.MakeGenericMethod(resolveType);
 
-                operationCtx.Items[this._scopeId] = instance;
-
-                return instance;
+                this._expression = Expression.Call(method,
+                    Stashbox.Constants.ScopeExpression,
+                    Expression.Constant(factory),
+                    Expression.Constant(this._scopeId));
             }
+
+            return this._expression;
+        }
+
+        private static TValue CollectScopedInstance<TValue>(IResolutionScope scope, Func<IResolutionScope, object> factory, string scopeId)
+            where TValue : class
+        {
+            var operationCtx = StashboxOperationContext.Current;
+            if (operationCtx == null)
+                return null;
+
+            if (operationCtx.Items[scopeId] != null)
+                return operationCtx.Items[scopeId] as TValue;
+
+            TValue instance;
+            var resolutionScope = operationCtx.Scope as IResolutionScope;
+            if (resolutionScope != null)
+            {
+                instance = factory(resolutionScope) as TValue;
+                operationCtx.Items[scopeId] = instance;
+            }
+            else
+                instance = factory(scope) as TValue;
+
+            return instance;
         }
 
         public override ILifetime Create() => new PerServiceOperationLifetime(this._scopeId);
-
-        public override void CleanUp()
-        {
-            lock (this._lock)
-            {
-                var operationCtx = OperationContext;
-                if (operationCtx == null)
-                    return;
-
-                if (operationCtx.Items[this._scopeId] != null)
-                {
-                    var instance = operationCtx.Items[this._scopeId] as IDisposable;
-                    if (instance != null)
-                    {
-                        instance.Dispose();
-                        operationCtx.Items[this._scopeId] = null;
-                    }
-                }
-            }
-        }
     }
 }

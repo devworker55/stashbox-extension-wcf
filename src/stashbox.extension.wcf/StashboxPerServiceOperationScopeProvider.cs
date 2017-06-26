@@ -35,6 +35,7 @@ namespace Stashbox.Extension.Wcf
             {
                 if (disposing)
                 {
+                    _container.Dispose();
                     _container = null;
                 }
 

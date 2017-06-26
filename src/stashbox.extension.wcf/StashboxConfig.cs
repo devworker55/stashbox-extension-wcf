@@ -22,16 +22,22 @@ namespace Stashbox.Extension.Wcf
         /// <summary>
         ///
         /// </summary>
+        public static Assembly[] ServiceAssemblies { get; set; }
+
+        /// <summary>
+        ///
+        /// </summary>
         /// <param name="configureAction"></param>
-        public static void RegisterStashbox(Action<IStashboxContainer> configureAction)
+        public static IStashboxContainer RegisterStashbox(Action<IStashboxContainer> configureAction)
         {
             var container = new StashboxContainer(config => config.WithCircularDependencyTracking()
                                                                   .WithDisposableTransientTracking()
-                                                                  .WithParentContainerResolution()
                                                                   .WithUnknownTypeResolution());
 
             ConfigureStashboxServiceComponents(container);
             configureAction.Invoke(container);
+
+            return container;
         }
 
         /// <summary>
@@ -47,13 +53,13 @@ namespace Stashbox.Extension.Wcf
         {
             container.RegisterType<StashboxInstanceProvider>();
 
-            container.PrepareType<IScopeProvider, StashboxPerServiceInstanceScopeProvider>()
-                     .WhenDependantIs<StashboxInstanceProvider>()
-                     .Register();
+            container.RegisterType<IStashboxContainer>(context => context.WithFactory(_ => _.BeginScope()));
 
-            container.PrepareType<IScopeProvider, StashboxPerServiceOperationScopeProvider>()
-                     .WhenDependantIs<StashboxDependencyInjectionParameterInspector>()
-                     .Register();
+            container.RegisterType<IScopeProvider, StashboxPerServiceInstanceScopeProvider>(context => context
+                     .WhenDependantIs<StashboxInstanceProvider>());
+
+            container.RegisterType<IScopeProvider, StashboxPerServiceOperationScopeProvider>(context => context
+                     .WhenDependantIs<StashboxDependencyInjectionParameterInspector>());
 
             StashboxServiceHostFactoryBase.SetContainer(container);
         }
@@ -69,7 +75,7 @@ namespace Stashbox.Extension.Wcf
 
             if (servicesAssemblies == null || servicesAssemblies.Length == 0)
             {
-                servicesAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+                servicesAssemblies = ServiceAssemblies;
             }
 
             var serviceTypes = (from assembly in servicesAssemblies
@@ -86,9 +92,8 @@ namespace Stashbox.Extension.Wcf
             foreach (Type serviceType in serviceTypes)
             {
                 ILifetime lifetimeScope = ServiceMetadataProvider.GetLifetimeScope(serviceType);
-                container.PrepareType(serviceType)
-                         .WithLifetime(lifetimeScope)
-                         .Register();
+                container.RegisterType(serviceType, context => context
+                         .WithLifetime(lifetimeScope));
             }
         }
 

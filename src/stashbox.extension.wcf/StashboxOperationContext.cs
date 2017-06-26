@@ -12,14 +12,13 @@ namespace Stashbox.Extension.Wcf
         private IScopeExtension _scopeExtension;
 
         public IDictionary Items { get; private set; }
-        public IStashboxContainer Scope => _scopeExtension.Scope;
+        public IDependencyResolver Scope => _scopeExtension.Scope;
         private static OperationContext OperationContext => OperationContext.Current;
         public static StashboxOperationContext Current => OperationContext?.Extensions.Find<StashboxOperationContext>();
 
         public StashboxOperationContext(IScopeExtension scopeExtension)
         {
             Shield.EnsureNotNull(scopeExtension, nameof(scopeExtension));
-
             Shield.EnsureNotNull(scopeExtension.Scope, $"{nameof(scopeExtension)}.{scopeExtension.Scope}");
 
             _scopeExtension = scopeExtension;
